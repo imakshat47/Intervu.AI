@@ -79,19 +79,29 @@ interview_agent = Agent[InterviewAgentContext](
     Format your reply as a JSON object with two keys:
     - refined_answer: A clearer and professional version of the user's answer.
     - next_question: The next follow-up or related a question to ask the candidate.
-    Ensure the JSON is parsable and concise.
+    Ensure the JSON is parsable and concise. json response should look like:
+    {{
+        "refined_answer": "A clearer and professional version of the user's answer.",
+        "next_question": "The next follow-up or related question."
+    }}
     """,
     tools=[interview_feedback_tool],
 )
 
 ### FASTAPI APP
 app = FastAPI()
-
+@app.get("/")
+async def root():
+    return {"message": "Hello there!!"}
 @app.post("/interview", response_model=InterviewResponse)
 async def interview_endpoint(req: InterviewRequest):
     session_id = req.session_id
     user_input = req.user_input
-
+    res = {
+    "refined_answer": "I have contributed to several projects, including a web-based inventory management system and a real-time chat application, utilizing technologies such as Python, JavaScript, and React.",        
+    "next_question": "Can you elaborate on the web-based inventory management system? What were some of the key technologies and challenges you encountered?"
+}
+    return InterviewResponse(**res)
     # Initialize context and history
     context = session_contexts.get(session_id, InterviewAgentContext())
     input_items = session_inputs.get(session_id, [])
@@ -111,7 +121,10 @@ async def interview_endpoint(req: InterviewRequest):
     for new_item in result.new_items:
         if isinstance(new_item, MessageOutputItem):
             try:
-                parsed = json.loads(ItemHelpers.text_message_output(new_item))
+                print(f"New item: {new_item}")
+                res = ItemHelpers.text_message_output(new_item)
+                print(f"Response: {res}")
+                parsed = json.loads(res)
                 output_text = {
                     "refined_answer": parsed.get("refined_answer", ""),
                     "next_question": parsed.get("next_question", "")
@@ -131,10 +144,11 @@ async def interview_endpoint(req: InterviewRequest):
     # Persist session state
     session_contexts[session_id] = context
     session_inputs[session_id] = result.to_input_list()
+    
     return InterviewResponse(**output_text)
     return InterviewResponse(agent_output=output_text)
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000 , reload=True, log_level="info")
 
 # python app.py

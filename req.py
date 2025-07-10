@@ -17,7 +17,26 @@ queries = [
     "I have worked on several projects, including a web-based inventory management system and a real-time chat application. ",
 ]
 
-for query in queries:
-    form_data = {"session_id": "john1", "user_input": str(query)}
-    response = requests.post("http://localhost:8000/interview", json=form_data, headers=headers)
-    print(response.json()) 
+query = """I am a software engineer working at ST. 
+I am good at developing web applications and have experience with Python, JavaScript, and React.
+I have worked on several projects, including a web-based inventory management system and a real-time chat application.
+"""
+
+form_data = {"session_id": "john1", "user_input": str(query), "question": {
+   "id": "123",
+   "text": "Tell me about yourself.",
+   "category": "behavioral",
+   "difficulty": "easy"
+ },}
+response = requests.post("http://localhost:8000/interview", json=form_data, headers=headers)
+print(response.json()) 
+
+# for query in queries:
+#     form_data = {"session_id": "john1", "user_input": str(query), "question": {
+#     "id": "123",
+#     "text": "Tell me about yourself.",
+#     "category": "behavioral",
+#     "difficulty": "easy"
+#   },}
+#     response = requests.post("http://localhost:8000/interview", json=form_data, headers=headers)
+#     print(response.json()) 

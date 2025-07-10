@@ -10,34 +10,34 @@ export const generateQuestions = (role: string, company: string): Question[] => 
   const questions: Question[] = [
     {
       id: '1',
-      text: `Why are you interested in working at ${company}?`,
-      category: 'Company Culture',
-      difficulty: 'Easy'
-    },
-    {
-      id: '2',
-      text: `What makes you a good fit for the ${role} position?`,
-      category: 'Role Fit',
-      difficulty: 'Medium'
-    },
-    {
-      id: '3',
-      text: 'Describe a challenging project you worked on and how you overcame obstacles.',
-      category: 'Problem Solving',
-      difficulty: 'Medium'
-    },
-    {
-      id: '4',
-      text: 'How do you handle working under pressure and tight deadlines?',
+      text: `Could you introduce yourself, focusing on your skills, strengths, and career aspirations?`,
       category: 'Behavioral',
       difficulty: 'Easy'
     },
-    {
-      id: '5',
-      text: 'What are your salary expectations for this role?',
-      category: 'Compensation',
-      difficulty: 'Hard'
-    }
+    // {
+    //   id: '2',
+    //   text: `What makes you a good fit for the ${role} position?`,
+    //   category: 'Role Fit',
+    //   difficulty: 'Medium'
+    // },
+    // {
+    //   id: '3',
+    //   text: 'Describe a challenging project you worked on and how you overcame obstacles.',
+    //   category: 'Problem Solving',
+    //   difficulty: 'Medium'
+    // },
+    // {
+    //   id: '4',
+    //   text: 'How do you handle working under pressure and tight deadlines?',
+    //   category: 'Behavioral',
+    //   difficulty: 'Easy'
+    // },
+    // {
+    //   id: '5',
+    //   text: 'What are your salary expectations for this role?',
+    //   category: 'Compensation',
+    //   difficulty: 'Hard'
+    // }
   ];
 
   return questions;

@@ -1,0 +1,24 @@
+# 🧠 AI Interview Backend Server
+
+This is the backend server for the AI-powered live interview platform. It accepts answers, evaluates them, and responds with the next question and feedback.
+
+---
+
+## 🚀 Getting Started
+
+Follow the steps below to install dependencies and run the development server locally.
+
+---
+
+### ✅ Prerequisites
+
+- [Node.js](https://nodejs.org/) v16+ installed
+- [npm](https://www.npmjs.com/) (comes with Node.js)
+
+---
+
+### 📦 Installation
+
+```bash
+npm install
+npm run dev

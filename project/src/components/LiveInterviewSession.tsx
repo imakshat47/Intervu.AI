@@ -28,6 +28,10 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [sessionTime, setSessionTime] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [sessionId] = useState('demo-session'); // default session_id
+  const [feedback, setFeedback] = useState('');
+  const [score, setScore] = useState<number | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<Question>(questions[0]);
 
   // Camera
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -41,7 +45,7 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
   const recognitionRef = useRef<any>(null);
   const silenceTimeoutRef = useRef<any>(null);
 
-  const currentQuestion = questions[currentQuestionIndex];
+  // const currentQuestion = "Tell me something about yourself.";
 
   // CAMERA: Open/Close video stream
   useEffect(() => {
@@ -66,7 +70,7 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
   useEffect(() => {
     if (videoRef.current && videoStream) {
       videoRef.current.srcObject = videoStream;
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play().catch(() => { });
     }
     if (videoRef.current && !videoStream) {
       videoRef.current.srcObject = null;
@@ -150,6 +154,7 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
       setIsReading(false);
       return;
     }
+    // const utter = new window.SpeechSynthesisUtterance(currentQuestion?.text || '');
     const utter = new window.SpeechSynthesisUtterance(currentQuestion?.text || '');
     utter.rate = 1;
     utter.pitch = 1;
@@ -160,14 +165,69 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
   };
 
   // --- Interview Logic ---
-  const handleSubmitAnswer = () => {
-    if (currentAnswer.trim()) {
-      onSubmitAnswer(currentQuestion.id, currentAnswer);
+  // const handleSubmitAnswer = () => {
+  //   if (currentAnswer.trim()) {
+  //     // onSubmitAnswer(currentQuestion.id, currentAnswer);
+  //     setCurrentAnswer('');
+  //     if (currentQuestionIndex < questions.length - 1) setCurrentQuestionIndex((prev) => prev + 1);
+  //     else onCompleteInterview();
+  //   }
+  // };
+
+  const handleSubmitAnswer = async () => {
+    if (!currentAnswer.trim()) return;
+
+    try {
+      const response = await fetch('http://localhost:8000/interview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+         body: JSON.stringify({
+        session_id: sessionId,
+        question: {
+          id: currentQuestion.id,
+          text: currentQuestion.text,
+          category: currentQuestion.category,
+          difficulty: currentQuestion.difficulty,
+        },
+        user_input: currentAnswer,
+      }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const {
+        next_question,
+        difficulty,
+        question_type,
+        llm_feedback,
+        score,
+      } = data;
+
+      // Update state with new values
+      const newQuestion: Question = {
+        id: `${Date.now()}`, // temp ID; replace if real ID is returned
+        text: next_question,
+        difficulty: difficulty,
+        category: question_type,
+      };
+
+      setCurrentQuestion(newQuestion);
       setCurrentAnswer('');
-      if (currentQuestionIndex < questions.length - 1) setCurrentQuestionIndex((prev) => prev + 1);
-      else onCompleteInterview();
+      setFeedback(llm_feedback);
+      setScore(score);
+      setCurrentQuestionIndex((prev) => prev + 1);
+
+    } catch (error) {
+      console.error('Error submitting answer:', error);
     }
   };
+
   const handleSkipQuestion = () => {
     setCurrentAnswer('');
     if (currentQuestionIndex < questions.length - 1) setCurrentQuestionIndex((prev) => prev + 1);
@@ -294,7 +354,8 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
                 <div className="mb-4 flex items-center justify-between px-4 py-2 bg-green-50 rounded-xl border border-green-100 w-full">
                   <span className="text-sm font-semibold text-green-600 uppercase tracking-wide">QUESTION</span>
                   <span className="text-lg font-bold text-gray-900">
-                    {currentQuestionIndex + 1} of {questions.length}
+                    {currentQuestionIndex + 1} of 10
+                    {/* {questions.length} */}
                   </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-2 bg-orange-50 rounded-xl border border-orange-100 w-full">
@@ -311,9 +372,8 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
               <h2 className="text-2xl font-bold text-gray-900">Current Question</h2>
               <button
                 onClick={handleReadAloud}
-                className={`transition-all duration-200 ${
-                  isReading ? 'bg-purple-100 text-purple-600 ring-4 ring-purple-200 animate-pulse' : ''
-                } p-2 rounded-full`}
+                className={`transition-all duration-200 ${isReading ? 'bg-purple-100 text-purple-600 ring-4 ring-purple-200 animate-pulse' : ''
+                  } p-2 rounded-full`}
                 title={isReading ? 'Stop Reading' : 'Read Question'}
               >
                 <Volume2 className="w-7 h-7" />
@@ -328,7 +388,7 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
               </p>
               <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
                 <span className="font-medium">Difficulty: {currentQuestion?.difficulty}</span>
-                <span className="font-medium">Question {currentQuestionIndex + 1}/{questions.length}</span>
+                <span className="font-medium">Question {currentQuestionIndex + 1}/10</span>
               </div>
             </div>
             <div className="flex justify-center mt-auto">
@@ -351,22 +411,20 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
               <div className="flex items-center space-x-3">
                 <button
                   onClick={handleMicClick}
-                  className={`p-3 rounded-full transition-all duration-200 ${
-                    isListening
-                      ? 'bg-green-100 text-green-600 ring-4 ring-green-200 animate-pulse'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                  className={`p-3 rounded-full transition-all duration-200 ${isListening
+                    ? 'bg-green-100 text-green-600 ring-4 ring-green-200 animate-pulse'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
                   title="Use speech-to-text"
                 >
                   <Mic className="w-6 h-6" />
                 </button>
                 <button
                   onClick={toggleRecording}
-                  className={`p-3 rounded-full transition-all duration-200 ${
-                    isRecording
-                      ? 'bg-red-100 text-red-600 ring-4 ring-red-100'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                  className={`p-3 rounded-full transition-all duration-200 ${isRecording
+                    ? 'bg-red-100 text-red-600 ring-4 ring-red-100'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
                   title="Toggle Camera"
                 >
                   <Camera className="w-6 h-6" />
@@ -392,7 +450,19 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
                 Submit Answer
               </Button>
             </div>
-            <div className="mt-6 text-center">
+            {feedback && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 font-medium">
+                LLM Feedback: {feedback}
+              </div>
+            )}
+
+            {score !== null && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 font-semibold">
+                Score: {score}
+              </div>
+            )}
+
+            {/* <div className="mt-6 text-center">
               <p className="text-sm text-gray-500 font-medium">
                 Question {currentQuestionIndex + 1} of {questions.length}
               </p>
@@ -402,7 +472,7 @@ export const LiveInterviewSession: React.FC<LiveInterviewSessionProps> = ({
                   style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
                 />
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
